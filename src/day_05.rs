@@ -10,7 +10,7 @@ fn solve_part_1(input: &[u8]) -> usize {
                 match ch {
                     b'a' | b'e' | b'i' | b'o' | b'u' => vowels += 1,
                     _ => {}
-                };
+                }
                 has_double = has_double || ch == prev;
                 match (prev, ch) {
                     (b'a', b'b') | (b'c', b'd') | (b'p', b'q') | (b'x', b'y') => return false,

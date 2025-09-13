@@ -17,13 +17,13 @@ enum Gate {
 impl Gate {
     pub fn evaluate(&self, values: &[Option<u16>]) -> Result<u16, usize> {
         Ok(match *self {
-            Gate::Constant(x) => x,
-            Gate::Copy(a) => values[a].ok_or(a)?,
-            Gate::And(a, b) => values[a].ok_or(a)? & values[b].ok_or(b)?,
-            Gate::Or(a, b) => values[a].ok_or(a)? | values[b].ok_or(b)?,
-            Gate::Not(a) => !values[a].ok_or(a)?,
-            Gate::LShift(a, x) => values[a].ok_or(a)? << x,
-            Gate::RShift(a, x) => values[a].ok_or(a)? >> x,
+            Self::Constant(x) => x,
+            Self::Copy(a) => values[a].ok_or(a)?,
+            Self::And(a, b) => values[a].ok_or(a)? & values[b].ok_or(b)?,
+            Self::Or(a, b) => values[a].ok_or(a)? | values[b].ok_or(b)?,
+            Self::Not(a) => !values[a].ok_or(a)?,
+            Self::LShift(a, x) => values[a].ok_or(a)? << x,
+            Self::RShift(a, x) => values[a].ok_or(a)? >> x,
         })
     }
 }
@@ -46,7 +46,7 @@ struct Circuit {
 }
 
 impl Circuit {
-    pub fn new(gates: Vec<Gate>, a_ix: Option<usize>, b_ix: Option<usize>) -> Self {
+    pub const fn new(gates: Vec<Gate>, a_ix: Option<usize>, b_ix: Option<usize>) -> Self {
         Self { gates, a_ix, b_ix }
     }
 
@@ -145,10 +145,7 @@ fn parse(input: &str) -> Result<Circuit, ParseError> {
             } else {
                 names.get(a).copied().ok_or(ParseError::UnknownName)?
             };
-            Gate::RShift(
-                a_ix,
-                x.parse()?,
-            )
+            Gate::RShift(a_ix, x.parse()?)
         } else if let Ok(x) = expr.parse() {
             Gate::Constant(x)
         } else {

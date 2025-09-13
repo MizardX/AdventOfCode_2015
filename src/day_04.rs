@@ -33,14 +33,14 @@ mod test {
     use super::*;
     use test_case::test_case;
 
-    #[test_case(b"abcdef" => 609043)]
-    #[test_case(b"pqrstuv" => 1048970)]
+    #[test_case(b"abcdef" => 609_043)]
+    #[test_case(b"pqrstuv" => 1_048_970)]
     fn test_part_1(input: &[u8]) -> u32 {
         solve_part_1(input)
     }
 
-    #[test_case(b"abcdef" => 6742839)]
-    #[test_case(b"pqrstuv" => 5714438)]
+    #[test_case(b"abcdef" => 6_742_839)]
+    #[test_case(b"pqrstuv" => 5_714_438)]
     fn test_part_2(input: &[u8]) -> u32 {
         solve_part_2(input)
     }

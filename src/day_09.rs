@@ -18,17 +18,17 @@ fn parse(input: &str) -> Result<Grid<u64>, ParseError> {
     let mut names = HashMap::new();
     let mut grid = Grid::new(10, 10);
     for line in input.lines() {
-        let (name1, rest) = line
+        let (source, rest) = line
             .split_once(" to ")
             .ok_or(ParseError::MissingDelimiter)?;
-        let (name2, rest) = rest.split_once(" = ").ok_or(ParseError::MissingDelimiter)?;
+        let (destination, rest) = rest.split_once(" = ").ok_or(ParseError::MissingDelimiter)?;
         let dist: u64 = rest.parse()?;
         let next_index = names.len();
-        let index1 = *names.entry(name1).or_insert(next_index);
+        let source_index = *names.entry(source).or_insert(next_index);
         let next_index = names.len();
-        let index2 = *names.entry(name2).or_insert(next_index);
-        grid[(index1, index2)] = dist;
-        grid[(index2, index1)] = dist;
+        let destination_index = *names.entry(destination).or_insert(next_index);
+        grid[(source_index, destination_index)] = dist;
+        grid[(destination_index, source_index)] = dist;
     }
     Ok(grid.resize(names.len(), names.len()))
 }
@@ -93,12 +93,12 @@ mod tests {
         let result = parse(input).unwrap();
         assert_eq!(result.rows(), 3);
         assert_eq!(result.cols(), 3);
-        assert_eq!(result[(0,1)], 464);
-        assert_eq!(result[(0,2)], 518);
-        assert_eq!(result[(1,0)], 464);
-        assert_eq!(result[(1,2)], 141);
-        assert_eq!(result[(2,0)], 518);
-        assert_eq!(result[(2,1)], 141);
+        assert_eq!(result[(0, 1)], 464);
+        assert_eq!(result[(0, 2)], 518);
+        assert_eq!(result[(1, 0)], 464);
+        assert_eq!(result[(1, 2)], 141);
+        assert_eq!(result[(2, 0)], 518);
+        assert_eq!(result[(2, 1)], 141);
     }
 
     #[test]

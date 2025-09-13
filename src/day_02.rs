@@ -10,7 +10,7 @@ struct Present {
 }
 
 impl Present {
-    fn new(length: u32, width: u32, height: u32) -> Self {
+    const fn new(length: u32, width: u32, height: u32) -> Self {
         Self {
             length,
             width,

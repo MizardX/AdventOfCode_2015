@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
 extern crate aoc_runner;
 
 #[macro_use]
@@ -19,4 +21,4 @@ mod day_13;
 
 mod utils;
 
-aoc_lib!{ year = 2015 }
+aoc_lib! { year = 2015 }

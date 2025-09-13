@@ -19,11 +19,11 @@ fn parse(input: &str) -> Result<Grid<i64>, ParseError> {
     let mut grid = Grid::new(10, 10);
     for line in input.lines() {
         //(name) would (gain|loose) (num) happiness units by sitting next to (name).
-        let (name1, rest) = line
+        let (subject, rest) = line
             .split_once(' ')
             .ok_or(ParseError::MissingDelimiter("first space"))?;
         let name_count = names.len();
-        let name1_index = *names.entry(name1).or_insert(name_count);
+        let subject_index = *names.entry(subject).or_insert(name_count);
         let rest = rest
             .strip_prefix("would ")
             .ok_or(ParseError::MissingDelimiter("would"))?;
@@ -41,12 +41,12 @@ fn parse(input: &str) -> Result<Grid<i64>, ParseError> {
         let rest = rest
             .strip_prefix("happiness units by sitting next to ")
             .ok_or(ParseError::MissingDelimiter("final phrase"))?;
-        let name2 = rest
+        let object = rest
             .strip_suffix(".")
             .ok_or(ParseError::MissingDelimiter("Final period"))?;
         let name_count = names.len();
-        let name2_index = *names.entry(name2).or_insert(name_count);
-        grid[(name1_index, name2_index)] = sign * num;
+        let object_index = *names.entry(object).or_insert(name_count);
+        grid[(subject_index, object_index)] = sign * num;
     }
     Ok(grid.resize(names.len(), names.len()))
 }

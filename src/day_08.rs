@@ -15,17 +15,9 @@ fn part1(input: &[u8]) -> usize {
         for &ch in &line[1..line.len() - 1] {
             state = match (state, ch) {
                 (State::Normal, b'\\') => State::Escaped,
-                (State::Normal, _) => {
-                    len -= 1;
-                    State::Normal
-                }
                 (State::Escaped, b'x' | b'X') => State::Hex0,
-                (State::Escaped, _) => {
-                    len -= 1;
-                    State::Normal
-                }
                 (State::Hex0, _) => State::Hex1,
-                (State::Hex1, _) => {
+                _ => {
                     len -= 1;
                     State::Normal
                 }

@@ -11,7 +11,7 @@ struct Rect {
 }
 
 impl Rect {
-    pub fn new(x1: usize, y1: usize, x2: usize, y2: usize) -> Self {
+    pub const fn new(x1: usize, y1: usize, x2: usize, y2: usize) -> Self {
         Self { x1, y1, x2, y2 }
     }
 }
@@ -49,7 +49,7 @@ impl TryFrom<&[u8]> for Rect {
         let y1 = parse_num(&left[left_comma + 1..])?;
         let x2 = parse_num(&right[..right_comma])?;
         let y2 = parse_num(&right[right_comma + 1..])?;
-        Ok(Rect::new(x1, y1, x2, y2))
+        Ok(Self::new(x1, y1, x2, y2))
     }
 }
 
@@ -85,13 +85,13 @@ impl TryFrom<&[u8]> for Instruction {
 fn parse_input(input: &[u8]) -> Result<Vec<Instruction>, ParseError> {
     input
         .split(|&ch| ch == b'\n')
-        .map(|line| line.try_into())
+        .map(std::convert::TryInto::try_into)
         .collect()
 }
 
 #[aoc(day6, part1)]
 fn solve_part_1(instructions: &[Instruction]) -> usize {
-    let mut grid = [[false; 1000]; 1000];
+    let mut grid = vec![[false; 1000]; 1000].into_boxed_slice();
     for instr in instructions {
         match instr {
             Instruction::TurnOn(rect) => {
@@ -117,12 +117,12 @@ fn solve_part_1(instructions: &[Instruction]) -> usize {
             }
         }
     }
-    grid.iter().flatten().map(|&v| v as usize).sum()
+    grid.iter().flatten().map(|&v| usize::from(v)).sum()
 }
 
 #[aoc(day6, part2)]
 fn solve_part_2(instructions: &[Instruction]) -> usize {
-    let mut grid = [[0_u8; 1000]; 1000];
+    let mut grid = vec![[0_u8; 1000]; 1000].into_boxed_slice();
     for instr in instructions {
         match instr {
             Instruction::TurnOn(rect) => {

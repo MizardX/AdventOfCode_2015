@@ -31,8 +31,12 @@ where
         Self { rows, cols, ..self }
     }
 
-    pub fn rows(&self) -> usize { self.rows }
-    pub fn cols(&self) -> usize { self.cols }
+    pub const fn rows(&self) -> usize {
+        self.rows
+    }
+    pub const fn cols(&self) -> usize {
+        self.cols
+    }
 }
 
 impl<T> Index<(usize, usize)> for Grid<T> {

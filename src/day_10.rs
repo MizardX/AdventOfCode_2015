@@ -18,7 +18,7 @@ fn run(input: &[u8], turns: usize, capacity: usize) -> usize {
     for _ in 0..turns {
         for chunk in curr.chunk_by(u8::eq) {
             let dig = chunk[0];
-            next.push(chunk.len() as u8);
+            next.push(u8::try_from(chunk.len()).expect("too many repeats"));
             next.push(dig);
         }
         (next, curr) = (curr, next);
