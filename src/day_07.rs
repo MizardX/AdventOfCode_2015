@@ -16,14 +16,14 @@ enum Gate {
 
 impl Gate {
     pub fn evaluate(&self, values: &[Option<u16>]) -> Result<u16, usize> {
-        Ok(match self {
-            &Gate::Constant(x) => x,
-            &Gate::Copy(a) => values[a].ok_or(a)?,
-            &Gate::And(a, b) => values[a].ok_or(a)? & values[b].ok_or(b)?,
-            &Gate::Or(a, b) => values[a].ok_or(a)? | values[b].ok_or(b)?,
-            &Gate::Not(a) => !values[a].ok_or(a)?,
-            &Gate::LShift(a, x) => values[a].ok_or(a)? << x,
-            &Gate::RShift(a, x) => values[a].ok_or(a)? >> x,
+        Ok(match *self {
+            Gate::Constant(x) => x,
+            Gate::Copy(a) => values[a].ok_or(a)?,
+            Gate::And(a, b) => values[a].ok_or(a)? & values[b].ok_or(b)?,
+            Gate::Or(a, b) => values[a].ok_or(a)? | values[b].ok_or(b)?,
+            Gate::Not(a) => !values[a].ok_or(a)?,
+            Gate::LShift(a, x) => values[a].ok_or(a)? << x,
+            Gate::RShift(a, x) => values[a].ok_or(a)? >> x,
         })
     }
 }
@@ -60,7 +60,7 @@ impl Circuit {
                 continue;
             }
             let gate = &self.gates[ix];
-            match gate.evaluate(&values) {
+            match gate.evaluate(values) {
                 Ok(res) => {
                     values[ix] = Some(res);
                     pending.extend_from_slice(&waiting_for[ix]);
@@ -166,8 +166,7 @@ fn parse(input: &str) -> Result<Circuit, ParseError> {
 #[aoc(day7, part1)]
 fn part1(circuit: &Circuit) -> Option<u16> {
     let mut values = vec![None; circuit.gates.len()];
-    let res = run(circuit, &mut values);
-    res
+    run(circuit, &mut values)
 }
 fn run(circuit: &Circuit, values: &mut [Option<u16>]) -> Option<u16> {
     circuit.evaluate(values);

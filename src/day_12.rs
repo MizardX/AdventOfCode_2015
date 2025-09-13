@@ -3,9 +3,10 @@ use std::collections::HashMap;
 #[aoc(day12, part1)]
 fn part_1(input: &[u8]) -> i64 {
     let mut sum = 0;
-    lex(input, |token| match token {
-        Token::Integer(num) => sum += num,
-        _ => (),
+    lex(input, |token| {
+        if let Token::Integer(num) = token {
+            sum += num
+        }
     });
     sum
 }
@@ -49,10 +50,10 @@ fn part_2(input: &[u8]) -> i64 {
             });
         }
         Token::ObjectEnd => {
-            if let Context::Object(octx) = current {
-                if octx.rollback_sum {
-                    sum = octx.sum_before;
-                }
+            if let Context::Object(octx) = current
+                && octx.rollback_sum
+            {
+                sum = octx.sum_before;
             }
             current = context.pop().unwrap();
             if let Context::Object(ref mut octx) = current {

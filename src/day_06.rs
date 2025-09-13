@@ -94,21 +94,21 @@ fn solve_part_1(instructions: &[Instruction]) -> usize {
     let mut grid = [[false; 1000]; 1000];
     for instr in instructions {
         match instr {
-            &Instruction::TurnOn(rect) => {
+            Instruction::TurnOn(rect) => {
                 for row in &mut grid[rect.y1..=rect.y2] {
                     for cell in &mut row[rect.x1..=rect.x2] {
                         *cell = true;
                     }
                 }
             }
-            &Instruction::TurnOff(rect) => {
+            Instruction::TurnOff(rect) => {
                 for row in &mut grid[rect.y1..=rect.y2] {
                     for cell in &mut row[rect.x1..=rect.x2] {
                         *cell = false;
                     }
                 }
             }
-            &Instruction::Toggle(rect) => {
+            Instruction::Toggle(rect) => {
                 for row in &mut grid[rect.y1..=rect.y2] {
                     for cell in &mut row[rect.x1..=rect.x2] {
                         *cell = !*cell;
@@ -125,21 +125,21 @@ fn solve_part_2(instructions: &[Instruction]) -> usize {
     let mut grid = [[0_u8; 1000]; 1000];
     for instr in instructions {
         match instr {
-            &Instruction::TurnOn(rect) => {
+            Instruction::TurnOn(rect) => {
                 for row in &mut grid[rect.y1..=rect.y2] {
                     for cell in &mut row[rect.x1..=rect.x2] {
                         *cell += 1;
                     }
                 }
             }
-            &Instruction::TurnOff(rect) => {
+            Instruction::TurnOff(rect) => {
                 for row in &mut grid[rect.y1..=rect.y2] {
                     for cell in &mut row[rect.x1..=rect.x2] {
                         *cell = (*cell).saturating_sub(1);
                     }
                 }
             }
-            &Instruction::Toggle(rect) => {
+            Instruction::Toggle(rect) => {
                 for row in &mut grid[rect.y1..=rect.y2] {
                     for cell in &mut row[rect.x1..=rect.x2] {
                         *cell += 2;
