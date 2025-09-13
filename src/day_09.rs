@@ -1,50 +1,9 @@
 use std::collections::HashMap;
 use std::num::ParseIntError;
-use std::ops::{Index, IndexMut};
 
 use thiserror::Error;
 
-struct Grid {
-    data: Box<[u64]>,
-    rows: usize,
-    cols: usize,
-    stride: usize,
-}
-
-impl Grid {
-    fn new(rows: usize, cols: usize) -> Self {
-        Self {
-            data: vec![0; rows * cols].into_boxed_slice(),
-            rows,
-            cols,
-            stride: cols,
-        }
-    }
-
-    fn resize(self, rows: usize, cols: usize) -> Self {
-        assert!(rows <= self.rows);
-        assert!(cols <= self.cols);
-        Self { rows, cols, ..self }
-    }
-}
-
-impl Index<(usize, usize)> for Grid {
-    type Output = u64;
-
-    fn index(&self, (r, c): (usize, usize)) -> &Self::Output {
-        assert!((0..self.rows).contains(&r));
-        assert!((0..self.cols).contains(&c));
-        &self.data[r * self.stride + c]
-    }
-}
-
-impl IndexMut<(usize, usize)> for Grid {
-    fn index_mut(&mut self, (r, c): (usize, usize)) -> &mut Self::Output {
-        assert!((0..self.rows).contains(&r));
-        assert!((0..self.cols).contains(&c));
-        &mut self.data[r * self.stride + c]
-    }
-}
+use crate::utils::Grid;
 
 #[derive(Debug, Error)]
 enum ParseError {
@@ -55,7 +14,7 @@ enum ParseError {
 }
 
 #[aoc_generator(day9)]
-fn parse(input: &str) -> Result<Grid, ParseError> {
+fn parse(input: &str) -> Result<Grid<u64>, ParseError> {
     let mut names = HashMap::new();
     let mut grid = Grid::new(10, 10);
     for line in input.lines() {
@@ -75,8 +34,8 @@ fn parse(input: &str) -> Result<Grid, ParseError> {
 }
 
 #[aoc(day9, part1)]
-fn part1(input: &Grid) -> u64 {
-    fn walk(grid: &Grid, perm: &mut [usize], index: usize) -> u64 {
+fn part1(input: &Grid<u64>) -> u64 {
+    fn walk(grid: &Grid<u64>, perm: &mut [usize], index: usize) -> u64 {
         if index == perm.len() {
             let mut dist = 0;
             let mut pos = perm[0];
@@ -95,13 +54,13 @@ fn part1(input: &Grid) -> u64 {
             min_dist
         }
     }
-    let mut perm = (0..input.rows).collect::<Vec<_>>();
+    let mut perm = (0..input.rows()).collect::<Vec<_>>();
     walk(input, &mut perm, 0)
 }
 
 #[aoc(day9, part2)]
-fn part2(input: &Grid) -> u64 {
-    fn walk(grid: &Grid, perm: &mut [usize], index: usize) -> u64 {
+fn part2(input: &Grid<u64>) -> u64 {
+    fn walk(grid: &Grid<u64>, perm: &mut [usize], index: usize) -> u64 {
         if index == perm.len() {
             let mut dist = 0;
             let mut pos = perm[0];
@@ -120,7 +79,7 @@ fn part2(input: &Grid) -> u64 {
             max_dist
         }
     }
-    let mut perm = (0..input.rows).collect::<Vec<_>>();
+    let mut perm = (0..input.rows()).collect::<Vec<_>>();
     walk(input, &mut perm, 0)
 }
 
@@ -132,14 +91,14 @@ mod tests {
     fn test_parse() {
         let input = "London to Dublin = 464\nLondon to Belfast = 518\nDublin to Belfast = 141";
         let result = parse(input).unwrap();
-        assert_eq!(result.rows, 3);
-        assert_eq!(result.cols, 3);
-        assert_eq!(*result.index((0,1)), 464);
-        assert_eq!(*result.index((0,2)), 518);
-        assert_eq!(*result.index((1,0)), 464);
-        assert_eq!(*result.index((1,2)), 141);
-        assert_eq!(*result.index((2,0)), 518);
-        assert_eq!(*result.index((2,1)), 141);
+        assert_eq!(result.rows(), 3);
+        assert_eq!(result.cols(), 3);
+        assert_eq!(result[(0,1)], 464);
+        assert_eq!(result[(0,2)], 518);
+        assert_eq!(result[(1,0)], 464);
+        assert_eq!(result[(1,2)], 141);
+        assert_eq!(result[(2,0)], 518);
+        assert_eq!(result[(2,1)], 141);
     }
 
     #[test]
