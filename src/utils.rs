@@ -2,6 +2,7 @@
 
 use std::ops::{Index, IndexMut};
 
+#[derive(Debug, Clone)]
 pub struct Grid<T> {
     data: Box<[T]>,
     rows: usize,
@@ -36,6 +37,12 @@ where
     }
     pub const fn cols(&self) -> usize {
         self.cols
+    }
+}
+
+impl<T: Copy> Grid<T> {
+    pub fn fill(&mut self, val: T) {
+        self.data.fill(val);
     }
 }
 
