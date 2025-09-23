@@ -1,6 +1,5 @@
-#![allow(unused)]
-use std::cell::{Ref, RefCell, RefMut};
-use std::collections::{BinaryHeap, HashSet, VecDeque};
+use std::cell::{Ref, RefCell};
+use std::collections::{BinaryHeap, HashSet};
 use std::hash::Hash;
 use std::num::ParseIntError;
 use std::ops::Deref;
@@ -72,7 +71,7 @@ fn play(player: Player, boss: Boss, hard_mode: bool) -> Vec<State> {
 
     let mut result = Vec::new();
     let mut min_mana_spent = u64::MAX;
-    while let Some(mut state) = pending.pop() {
+    while let Some(state) = pending.pop() {
         if state.mana_spent > min_mana_spent { continue; }
         if visited.contains(&state) {
             continue;
@@ -134,6 +133,7 @@ impl Boss {
 #[derive(Debug, Default, Eq, Clone)]
 struct State {
     round: i64,
+    #[allow(unused)]
     last_action: &'static str,
     player: Player,
     boss: Boss,
@@ -144,6 +144,7 @@ struct State {
 
     effect_timers: [u64; Effect::all().len()],
 
+    #[allow(unused)]
     came_from: Option<SharedState>,
 }
 
@@ -196,6 +197,7 @@ impl State {
         res
     }
 
+    #[allow(unused)]
     fn get_history(&self, rc: &SharedState) -> Vec<SharedState> {
         let mut result = Vec::new();
         if let Some(rc) = &self.came_from {
@@ -432,15 +434,15 @@ mod tests {
                 write!(
                     &mut log,
                     "[{round}] {last_action} - Player:{player_hp}hp/{player_mana}mp Boss:{boss_hp}hp"
-                );
+                ).unwrap();
                 for effect in Effect::all() {
                     let name = Spell::Effect(effect).name();
                     let duration = effect_timers[effect.index()];
                     if duration > 0 {
-                        write!(&mut log, " {name}({duration})");
+                        write!(&mut log, " {name}({duration})").unwrap();
                     }
                 }
-                writeln!(&mut log, " - Mana spent:{mana_spent}");
+                writeln!(&mut log, " - Mana spent:{mana_spent}").unwrap();
             }
         }
         log
@@ -520,18 +522,18 @@ mod tests {
         let mut result = String::new();
         for &spell in spells {
             if state.player.is_dead() {
-                writeln!(&mut result, "Unexpected boss win!");
+                writeln!(&mut result, "Unexpected boss win!").unwrap();
                 break;
             }
             if state.boss.is_dead() {
-                writeln!(&mut result, "Unexpected player win!");
+                writeln!(&mut result, "Unexpected player win!").unwrap();
             }
             if let Some(next) = state.make_move(spell, came_from.clone()) {
                 state = next;
                 came_from = SharedState::new(state.clone());
             } else {
                 let name = spell.name();
-                writeln!(&mut result, "Failed to cast {name}!");
+                writeln!(&mut result, "Failed to cast {name}!").unwrap();
                 break;
             }
         }
@@ -555,15 +557,15 @@ mod tests {
             write!(
                 &mut result,
                 "[{round}] {last_action} - Player:{player_hp}hp/{player_mana}mp Boss:{boss_hp}hp"
-            );
+            ).unwrap();
             for effect in Effect::all() {
                 let name = Spell::Effect(effect).name();
                 let duration = effect_timers[effect.index()];
                 if duration > 0 {
-                    write!(&mut result, " {name}({duration})");
+                    write!(&mut result, " {name}({duration})").unwrap();
                 }
             }
-            writeln!(&mut result, " - Mana spent:{mana_spent}");
+            writeln!(&mut result, " - Mana spent:{mana_spent}").unwrap();
         }
         result
     }
