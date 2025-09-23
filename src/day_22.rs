@@ -41,7 +41,7 @@ fn parse(input: &str) -> Result<Boss, ParseError> {
 fn part_1(boss: &Boss) -> u64 {
     play(Player::new(50, 500), *boss, false)
         .iter()
-        .map(|s| s.as_state().mana_spent)
+        .map(|s| s.mana_spent)
         .min()
         .unwrap()
 }
@@ -50,39 +50,35 @@ fn part_1(boss: &Boss) -> u64 {
 fn part_2(boss: &Boss) -> u64 {
     play(Player::new(50, 500), *boss, true)
         .iter()
-        .map(|s| s.as_state().mana_spent)
+        .map(|s| s.mana_spent)
         .min()
         .unwrap()
 }
 
-fn play(player: Player, boss: Boss, hard_mode: bool) -> Vec<SharedState> {
-    let start_state = SharedState::new(State {
+fn play(player: Player, boss: Boss, hard_mode: bool) -> Vec<State> {
+    let start_state = State {
         last_action: "Start",
         player,
         boss,
         hard_mode,
         ..Default::default()
-    });
+    };
 
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "Inner struct is frozen, and came_from is not part of equality"
-    )]
+    #[expect(clippy::mutable_key_type, reason = "came_from is not part of equality")]
     let mut visited = HashSet::new();
 
     let mut pending = VecDeque::new();
     pending.push_front(start_state);
 
     let mut result = Vec::new();
-    while let Some(state) = pending.pop_back() {
+    while let Some(mut state) = pending.pop_back() {
         if visited.contains(&state) {
             continue;
         }
-        state.freeze();
         visited.insert(state.clone());
-        if state.as_state().boss.is_dead() {
+        if state.boss.is_dead() {
             result.push(state);
-        } else if !state.as_state().player.is_dead() {
+        } else if !state.player.is_dead() {
             for child in state.moves() {
                 pending.push_front(child);
             }
@@ -142,11 +138,69 @@ struct State {
     mana_spent: u64,
 
     hard_mode: bool,
-    frozen: bool,
 
     effect_timers: [u64; Effect::all().len()],
 
     came_from: Option<SharedState>,
+}
+
+impl State {
+    const fn check_win(&self) -> bool {
+        self.player.is_dead() || self.boss.is_dead()
+    }
+
+    const fn create_child(&self, action: &'static str, came_from: SharedState) -> Self {
+        Self {
+            last_action: action,
+            round: self.round + 1,
+            came_from: Some(came_from),
+            ..*self
+        }
+    }
+
+    fn make_move(&self, spell: Spell, came_from: SharedState) -> Option<Self> {
+        let mut child = self.create_child(spell.name(), came_from);
+
+        for step in [
+            Step::HardMode,
+            Step::Effects,
+            Step::Spell(spell),
+            Step::Effects,
+            Step::BossAction,
+        ] {
+            if !step.apply(&mut child) {
+                return None;
+            }
+            if child.check_win() {
+                return Some(child);
+            }
+        }
+
+        Some(child)
+    }
+
+    fn moves(&self) -> Vec<Self> {
+        let came_from = SharedState::new(self.clone());
+        let mut res = Vec::new();
+        if self.check_win() {
+            return res;
+        }
+        for spell in Spell::all() {
+            if let Some(child) = self.make_move(spell, came_from.clone()) {
+                res.push(child);
+            }
+        }
+        res
+    }
+
+    fn get_history(&self, rc: &SharedState) -> Vec<SharedState> {
+        let mut result = Vec::new();
+        if let Some(rc) = &self.came_from {
+            result = rc.unwrap().get_history(rc);
+        }
+        result.push(rc.clone());
+        result
+    }
 }
 
 impl PartialEq for State {
@@ -177,93 +231,19 @@ impl SharedState {
     fn new(state: State) -> Self {
         Self(Rc::new(RefCell::new(state)))
     }
+    fn unwrap(&self) -> Ref<'_, State> {
+        self.0.borrow()
+    }
 }
 impl PartialEq for SharedState {
     fn eq(&self, other: &Self) -> bool {
-        self.0.borrow().deref() == other.0.borrow().deref()
+        self.unwrap().deref() == other.unwrap().deref()
     }
 }
 impl Eq for SharedState {}
 impl Hash for SharedState {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.borrow().hash(state);
-    }
-}
-
-impl SharedState {
-    fn as_state(&self) -> Ref<'_, State> {
-        self.0.borrow()
-    }
-
-    fn as_state_mut(&self) -> RefMut<'_, State> {
-        let res = self.0.borrow_mut();
-        assert!(!res.frozen, "Tried to modify frozen state");
-        res
-    }
-
-    fn freeze(&self) {
-        self.as_state_mut().frozen = true;
-    }
-
-    fn create_child(&self, action: &'static str) -> Self {
-        let inner = self.as_state();
-        Self(Rc::new(RefCell::new(State {
-            last_action: action,
-            round: inner.round + 1,
-            came_from: Some(self.clone()),
-            frozen: false,
-            ..inner.clone()
-        })))
-    }
-
-    fn check_win(&self) -> bool {
-        let mut inner = self.as_state();
-        inner.player.is_dead() || inner.boss.is_dead()
-    }
-
-    fn make_move(&self, spell: Spell) -> Option<Self> {
-        let mut child = self.create_child(spell.name());
-
-        for step in [
-            Step::HardMode,
-            Step::Effects,
-            Step::Spell(spell),
-            Step::Effects,
-            Step::BossAction,
-        ] {
-            if !step.apply(&child) {
-                return None;
-            }
-            if child.check_win() {
-                return Some(child);
-            }
-        }
-
-        Some(child)
-    }
-
-    fn moves(&self) -> Vec<Self> {
-        if self.check_win() {
-            return vec![];
-        }
-        let inner = self.as_state();
-        let mut result: Vec<Self> = Vec::new();
-        for spell in Spell::all() {
-            if let Some(child) = self.make_move(spell) {
-                result.push(child);
-            }
-        }
-        result
-    }
-
-    fn get_history(&self) -> Vec<Self> {
-        let inner = self.as_state();
-        let mut result = Vec::new();
-        if let Some(rc) = &inner.came_from {
-            result = rc.get_history();
-        }
-        result.push(self.clone());
-        result
+        self.unwrap().hash(state);
     }
 }
 
@@ -276,12 +256,11 @@ enum Step {
 }
 
 impl Step {
-    fn apply(self, state: &SharedState) -> bool {
+    fn apply(self, state: &mut State) -> bool {
         match self {
             Self::HardMode => {
-                let mut inner = state.as_state_mut();
-                if inner.hard_mode {
-                    inner.player.take_damage(1);
+                if state.hard_mode {
+                    state.player.take_damage(1);
                 }
             }
             Self::Effects => {
@@ -291,9 +270,8 @@ impl Step {
             }
             Self::Spell(spell) => return spell.apply(state),
             Self::BossAction => {
-                let mut inner = state.as_state_mut();
-                let damage = inner.boss.damage;
-                inner.player.take_damage(damage);
+                let damage = state.boss.damage;
+                state.player.take_damage(damage);
             }
         }
         true
@@ -338,30 +316,28 @@ impl Spell {
         }
     }
 
-    fn apply(self, state: &SharedState) -> bool {
-        let mut inner = state.as_state_mut();
+    const fn apply(self, state: &mut State) -> bool {
         let cost = self.mana_cost();
-        if cost > inner.player.mana {
+        if cost > state.player.mana {
             return false;
         }
         match self {
             Self::MagicMissile => {
-                inner.boss.take_damage(4);
+                state.boss.take_damage(4);
             }
             Self::Drain => {
-                inner.boss.take_damage(2);
-                inner.player.heal(2);
+                state.boss.take_damage(2);
+                state.player.heal(2);
             }
             Self::Effect(eff) => {
-                if inner.effect_timers[eff.index()] > 0 {
+                if state.effect_timers[eff.index()] > 0 {
                     return false;
                 }
-                inner.effect_timers[eff.index()] = eff.duration();
+                state.effect_timers[eff.index()] = eff.duration();
             }
         }
-        inner.player.mana -= cost;
-        inner.mana_spent += cost;
-        drop(inner);
+        state.player.mana -= cost;
+        state.mana_spent += cost;
         true
     }
 }
@@ -388,18 +364,17 @@ impl Effect {
         }
     }
 
-    fn apply(self, state: &SharedState) {
+    fn apply(self, state: &mut State) {
         let index = self.index();
-        let mut inner = state.0.borrow_mut();
-        if inner.effect_timers[index] > 0 {
-            inner.effect_timers[index] -= 1;
+        if state.effect_timers[index] > 0 {
+            state.effect_timers[index] -= 1;
             match self {
-                Self::Shield => inner.player.armor = 7,
-                Self::Poison => inner.boss.hp = inner.boss.hp.saturating_sub(3),
-                Self::Recharge => inner.player.mana += 101,
+                Self::Shield => state.player.armor = 7,
+                Self::Poison => state.boss.hp = state.boss.hp.saturating_sub(3),
+                Self::Recharge => state.player.mana += 101,
             }
         } else if self == Self::Shield {
-            inner.player.armor = 0;
+            state.player.armor = 0;
         }
     }
 }
@@ -413,20 +388,18 @@ mod tests {
         let mut minimal = Vec::new();
         let mut min_cost = u64::MAX;
         for solution in play(player, boss, hard_mode) {
-            let inner = solution.as_state();
-            if inner.mana_spent < min_cost {
+            if solution.mana_spent < min_cost {
                 minimal.clear();
-                min_cost = inner.mana_spent;
+                min_cost = solution.mana_spent;
             }
-            if inner.mana_spent == min_cost {
-                drop(inner);
+            if solution.mana_spent == min_cost {
                 minimal.push(solution);
             }
         }
         let mut log = String::new();
         for state in minimal {
-            for history in state.get_history() {
-                let inner = history.as_state();
+            for history in state.get_history(&SharedState::new(state.clone())) {
+                let inner = history.unwrap();
                 let State {
                     round,
                     last_action,
@@ -522,33 +495,34 @@ mod tests {
     }
 
     fn run_test_make_move(player: Player, boss: Boss, hard_mode: bool, spells: &[Spell]) -> String {
-        let mut state = SharedState::new(State {
+        let mut state = State {
             last_action: "Start",
             player,
             boss,
             hard_mode,
             ..Default::default()
-        });
-
+        };
+        let mut came_from = SharedState::new(state.clone());
         let mut result = String::new();
         for &spell in spells {
-            if state.as_state().player.is_dead() {
+            if state.player.is_dead() {
                 writeln!(&mut result, "Unexpected boss win!");
                 break;
             }
-            if state.as_state().boss.is_dead() {
+            if state.boss.is_dead() {
                 writeln!(&mut result, "Unexpected player win!");
             }
-            if let Some(next) = state.make_move(spell) {
+            if let Some(next) = state.make_move(spell, came_from.clone()) {
                 state = next;
+                came_from = SharedState::new(state.clone());
             } else {
                 let name = spell.name();
                 writeln!(&mut result, "Failed to cast {name}!");
                 break;
             }
         }
-        for history in state.get_history() {
-            let inner = history.as_state();
+        for history in state.get_history(&came_from) {
+            let inner = history.unwrap();
             let State {
                 round,
                 last_action,
