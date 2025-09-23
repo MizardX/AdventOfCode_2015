@@ -1,6 +1,6 @@
 #![allow(unused)]
 use std::cell::{Ref, RefCell, RefMut};
-use std::collections::{HashSet, VecDeque};
+use std::collections::{BinaryHeap, HashSet, VecDeque};
 use std::hash::Hash;
 use std::num::ParseIntError;
 use std::ops::Deref;
@@ -67,20 +67,23 @@ fn play(player: Player, boss: Boss, hard_mode: bool) -> Vec<State> {
     #[expect(clippy::mutable_key_type, reason = "came_from is not part of equality")]
     let mut visited = HashSet::new();
 
-    let mut pending = VecDeque::new();
-    pending.push_front(start_state);
+    let mut pending = BinaryHeap::new();
+    pending.push(start_state);
 
     let mut result = Vec::new();
-    while let Some(mut state) = pending.pop_back() {
+    let mut min_mana_spent = u64::MAX;
+    while let Some(mut state) = pending.pop() {
+        if state.mana_spent > min_mana_spent { continue; }
         if visited.contains(&state) {
             continue;
         }
         visited.insert(state.clone());
         if state.boss.is_dead() {
+            min_mana_spent = state.mana_spent;
             result.push(state);
         } else if !state.player.is_dead() {
             for child in state.moves() {
-                pending.push_front(child);
+                pending.push(child);
             }
         }
     }
@@ -200,6 +203,17 @@ impl State {
         }
         result.push(rc.clone());
         result
+    }
+}
+
+impl Ord for State {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.mana_spent.cmp(&self.mana_spent)
+    }
+}
+impl PartialOrd for State {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
