@@ -77,61 +77,27 @@ fn part_2(input: &[Raindeer]) -> i64 {
     advanced_rules(input, 2503)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Action {
-    Flying,
-    Recovering,
-}
-
-#[derive(Debug, Clone, Copy)]
-struct Player {
-    position: i64,
-    score: i64,
-    action: Action,
-    until_time: i64,
-    index: usize,
-}
-
 fn advanced_rules(input: &[Raindeer], time: i64) -> i64 {
     let n = input.len();
-    let mut players = input
-        .iter()
-        .enumerate()
-        .map(|(index, raindeer)| Player {
-            position: 0,
-            score: 0,
-            action: Action::Flying,
-            until_time: raindeer.active,
-            index,
-        })
-        .collect::<Vec<_>>();
-    for t in 0..=time {
-        for p in &mut players {
-            if p.until_time == t {
-                match p.action {
-                    Action::Flying => {
-                        p.action = Action::Recovering;
-                        p.until_time = t + input[p.index].recover;
-                    }
-                    Action::Recovering => {
-                        p.action = Action::Flying;
-                        p.until_time = t + input[p.index].active;
-                    }
-                }
+    let mut scores = vec![0; n];
+    let mut in_lead = vec![];
+    for t in 1..=time {
+        let mut lead_pos = i64::MIN;
+        for (index, raindeer) in input.iter().enumerate() {
+            let position = raindeer.project(t);
+            if position > lead_pos {
+                in_lead.clear();
+                lead_pos = position;
             }
-            if p.action == Action::Flying {
-                p.position += input[p.index].velocity;
+            if position == lead_pos {
+                in_lead.push(index);
             }
         }
-        players.sort_unstable_by_key(|p| (p.position, input[p.index].velocity));
-        let max_position = players[n - 1].position;
-        for p in &mut players {
-            if p.position == max_position {
-                p.score += 1;
-            }
+        for &i in &in_lead {
+            scores[i] += 1;
         }
     }
-    players.iter().map(|p| p.score).max().unwrap()
+    scores.iter().copied().max().unwrap()
 }
 
 #[cfg(test)]
