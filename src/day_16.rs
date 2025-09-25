@@ -1,5 +1,5 @@
 use std::num::ParseIntError;
-use std::ops::{Bound, Index, IndexMut, RangeBounds};
+use std::ops::{Index, IndexMut};
 use std::str::FromStr;
 
 use thiserror::Error;
@@ -79,42 +79,18 @@ impl AuntSue {
             amounts: [None; 10],
         }
     }
-}
 
-trait SueMatcher {
-    fn matches(target: &AuntSue, item: &AuntSue) -> bool;
-}
-
-struct Exact;
-impl SueMatcher for Exact {
-    fn matches(target: &AuntSue, item: &AuntSue) -> bool {
-        for compound in Compound::all() {
-            let Some(a) = target[compound] else { continue };
-            let Some(b) = item[compound] else { continue };
-            if a != b {
-                return false;
-            }
+    pub const fn with_amounts(amounts: [u8; 10]) -> Self {
+        let mut new_amounts = [None; 10];
+        let mut i = 0;
+        while i < amounts.len() {
+            new_amounts[i] = Some(amounts[i]);
+            i += 1;
         }
-        true
-    }
-}
-
-struct Ranged;
-impl SueMatcher for Ranged {
-    fn matches(target: &AuntSue, item: &AuntSue) -> bool {
-        for compound in Compound::all() {
-            let Some(a) = target[compound] else { continue };
-            let Some(b) = item[compound] else { continue };
-            let range = match compound {
-                Compound::Cats | Compound::Trees => (Bound::Excluded(a), Bound::Unbounded),
-                Compound::Pomeranians | Compound::Goldfish => (Bound::Unbounded, Bound::Excluded(a)),
-                _ => (Bound::Included(a), Bound::Included(a)),
-            };
-            if !range.contains(&b) {
-                return false;
-            }
+        Self {
+            number: 0,
+            amounts: new_amounts,
         }
-        true
     }
 }
 
@@ -188,24 +164,35 @@ fn parse(input: &str) -> Result<Vec<AuntSue>, ParseError> {
 
 #[aoc(day16, part1)]
 fn part_1(aunts: &[AuntSue]) -> usize {
-    run::<Exact>(aunts)
+    run(aunts, |_, target, item| item == target)
 }
 
 #[aoc(day16, part2)]
 fn part_2(aunts: &[AuntSue]) -> usize {
-    run::<Ranged>(aunts)
+    run(aunts, |compound, target, item| match compound {
+        Compound::Cats | Compound::Trees => item > target,
+        Compound::Pomeranians | Compound::Goldfish => item < target,
+        _ => item == target,
+    })
 }
 
-fn run<M: SueMatcher>(aunts: &[AuntSue]) -> usize {
-    let mut target = AuntSue::new(0);
-    for (compound, amout) in Compound::all()
-        .into_iter()
-        .zip([3, 7, 2, 3, 0, 0, 5, 3, 2, 1])
-    {
-        target[compound] = Some(amout);
-    }
-    let matching_aunt = aunts.iter().find(|&a| M::matches(&target, a)).unwrap();
-    matching_aunt.number
+fn run(aunts: &[AuntSue], matcher: fn(Compound, u8, u8) -> bool) -> usize {
+    let target = AuntSue::with_amounts([3, 7, 2, 3, 0, 0, 5, 3, 2, 1]);
+    aunts
+        .iter()
+        .find_map(|item| {
+            Compound::all()
+                .iter()
+                .all(|&compound| {
+                    let Some(item) = item[compound] else {
+                        return true;
+                    };
+                    let target = target[compound].unwrap();
+                    matcher(compound, target, item)
+                })
+                .then_some(item.number)
+        })
+        .unwrap()
 }
 
 // No test cases provided in problem statement
