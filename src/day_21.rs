@@ -53,6 +53,26 @@ impl FromStr for CharInfo {
     }
 }
 
+impl CharInfo {
+    fn beats(&self, enemy: &Self) -> bool {
+        let enemy_kills_self = self
+            .hit_points
+            .div_ceil(enemy.damage.saturating_sub(self.armor).max(1));
+        let self_kills_enemy = enemy
+            .hit_points
+            .div_ceil(self.damage.saturating_sub(enemy.armor).max(1));
+        self_kills_enemy <= enemy_kills_self
+    }
+
+    const fn create_player(equipment: &Item) -> Self {
+        Self {
+            hit_points: 100,
+            damage: equipment.damage,
+            armor: equipment.armor,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default)]
 struct Item {
     cost: u64,
@@ -67,6 +87,28 @@ impl Item {
             damage,
             armor,
         }
+    }
+
+    fn from_config(mut config: usize) -> Self {
+        let mut equipment = Self::default();
+
+        let weapon_index = config % 5;
+        equipment += WEAPONS[weapon_index];
+        config /= 5;
+
+        let armor_index = config % 6;
+        if armor_index != 0 {
+            equipment += ARMOR[armor_index - 1];
+        }
+        config /= 6;
+
+        for (ring_index, ring) in RINGS.iter().enumerate() {
+            if (config >> ring_index) & 1 != 0 {
+                equipment += *ring;
+            }
+        }
+
+        equipment
     }
 }
 
@@ -110,13 +152,9 @@ fn parse(input: &str) -> Result<CharInfo, ParseError> {
 fn part_1(boss: &CharInfo) -> u64 {
     let mut win_min_cost = u64::MAX;
     for config in 0..(5 * 6) << 6 {
-        let equipment = build_equipment(config);
-        let player = CharInfo {
-            hit_points: 100,
-            damage: equipment.damage,
-            armor: equipment.armor,
-        };
-        if simulate(player, *boss) {
+        let equipment = Item::from_config(config);
+        let player = CharInfo::create_player(&equipment);
+        if player.beats(boss) {
             win_min_cost = win_min_cost.min(equipment.cost);
         }
     }
@@ -127,56 +165,13 @@ fn part_1(boss: &CharInfo) -> u64 {
 fn part_2(boss: &CharInfo) -> u64 {
     let mut loss_max_cost = u64::MIN;
     for config in 0..(5 * 6) << 6 {
-        let equipment = build_equipment(config);
-        let player = CharInfo {
-            hit_points: 100,
-            damage: equipment.damage,
-            armor: equipment.armor,
-        };
-        if !simulate(player, *boss) {
+        let equipment = Item::from_config(config);
+        let player = CharInfo::create_player(&equipment);
+        if !player.beats(boss) {
             loss_max_cost = loss_max_cost.max(equipment.cost);
         }
     }
     loss_max_cost
-}
-
-fn build_equipment(mut config: usize) -> Item {
-    let mut equipment = Item::default();
-
-    let weapon_index = config % 5;
-    equipment += WEAPONS[weapon_index];
-    config /= 5;
-
-    let armor_index = config % 6;
-    if armor_index != 0 {
-        equipment += ARMOR[armor_index - 1];
-    }
-    config /= 6;
-
-    for (ring_index, ring) in RINGS.iter().enumerate() {
-        if (config >> ring_index) & 1 != 0 {
-            equipment += *ring;
-        }
-    }
-
-    equipment
-}
-
-fn simulate(mut player: CharInfo, mut boss: CharInfo) -> bool {
-    loop {
-        boss.hit_points = boss
-            .hit_points
-            .saturating_sub(player.damage.saturating_sub(boss.armor).max(1));
-        if boss.hit_points == 0 {
-            return true;
-        }
-        player.hit_points = player
-            .hit_points
-            .saturating_sub(boss.damage.saturating_sub(player.armor).max(1));
-        if player.hit_points == 0 {
-            return false;
-        }
-    }
 }
 
 #[cfg(test)]
@@ -210,10 +205,10 @@ Armor: 2
             damage: 7,
             armor: 2,
         };
-        assert!(simulate(player, boss), "player wins");
+        assert!(player.beats(&boss), "player wins");
         player.hit_points -= 1;
-        assert!(simulate(player, boss), "player wins");
+        assert!(player.beats(&boss), "player wins");
         player.hit_points -= 1;
-        assert!(!simulate(player, boss), "boss wins");
+        assert!(!player.beats(&boss), "boss wins");
     }
 }
