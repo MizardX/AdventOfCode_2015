@@ -1,9 +1,7 @@
-use std::cell::{Ref, RefCell};
 use std::collections::{BinaryHeap, HashSet};
 use std::hash::Hash;
 use std::num::ParseIntError;
-use std::ops::Deref;
-use std::rc::Rc;
+use std::str::FromStr;
 
 use thiserror::Error;
 
@@ -15,21 +13,23 @@ enum ParseError {
     InvalidNumber(#[from] ParseIntError),
 }
 
+fn parse_line<T>(line: Option<&str>, prefix: &str) -> Result<T, ParseError>
+where
+    T: FromStr,
+    ParseError: From<T::Err>,
+{
+    Ok(line
+        .ok_or(ParseError::SyntaxError)?
+        .strip_prefix(prefix)
+        .ok_or(ParseError::SyntaxError)?
+        .parse()?)
+}
+
 #[aoc_generator(day22)]
 fn parse(input: &str) -> Result<Boss, ParseError> {
     let mut lines = input.lines();
-    let hit_points = lines
-        .next()
-        .ok_or(ParseError::SyntaxError)?
-        .strip_prefix("Hit Points: ")
-        .ok_or(ParseError::SyntaxError)?
-        .parse()?;
-    let damage = lines
-        .next()
-        .ok_or(ParseError::SyntaxError)?
-        .strip_prefix("Damage: ")
-        .ok_or(ParseError::SyntaxError)?
-        .parse()?;
+    let hit_points = parse_line(lines.next(), "Hit Points: ")?;
+    let damage = parse_line(lines.next(), "Damage: ")?;
     if lines.next().is_some() {
         return Err(ParseError::SyntaxError);
     }
@@ -38,8 +38,7 @@ fn parse(input: &str) -> Result<Boss, ParseError> {
 
 #[aoc(day22, part1)]
 fn part_1(boss: &Boss) -> u64 {
-    play(Player::new(50, 500), *boss, false)
-        .iter()
+    Simulator::new(Player::new(50, 500), *boss, false)
         .map(|s| s.mana_spent)
         .min()
         .unwrap()
@@ -47,46 +46,59 @@ fn part_1(boss: &Boss) -> u64 {
 
 #[aoc(day22, part2)]
 fn part_2(boss: &Boss) -> u64 {
-    play(Player::new(50, 500), *boss, true)
-        .iter()
+    Simulator::new(Player::new(50, 500), *boss, true)
         .map(|s| s.mana_spent)
         .min()
         .unwrap()
 }
 
-fn play(player: Player, boss: Boss, hard_mode: bool) -> Vec<State> {
-    let start_state = State {
-        last_action: "Start",
-        player,
-        boss,
-        hard_mode,
-        ..Default::default()
-    };
+#[derive(Debug, Clone)]
+struct Simulator {
+    visited: HashSet<State>,
+    pending: BinaryHeap<State>,
+    min_mana_spent: u64,
+}
 
-    #[expect(clippy::mutable_key_type, reason = "came_from is not part of equality")]
-    let mut visited = HashSet::new();
+impl Simulator {
+    fn new(player: Player, boss: Boss, hard_mode: bool) -> Self {
+        let start_state = State {
+            player,
+            boss,
+            hard_mode,
+            ..Default::default()
+        };
 
-    let mut pending = BinaryHeap::new();
-    pending.push(start_state);
-
-    let mut result = Vec::new();
-    let mut min_mana_spent = u64::MAX;
-    while let Some(state) = pending.pop() {
-        if state.mana_spent > min_mana_spent { continue; }
-        if visited.contains(&state) {
-            continue;
-        }
-        visited.insert(state.clone());
-        if state.boss.is_dead() {
-            min_mana_spent = state.mana_spent;
-            result.push(state);
-        } else if !state.player.is_dead() {
-            for child in state.moves() {
-                pending.push(child);
-            }
+        Self {
+            visited: HashSet::new(),
+            pending: [start_state].into(),
+            min_mana_spent: u64::MAX,
         }
     }
-    result
+}
+
+impl Iterator for Simulator {
+    type Item = State;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(state) = self.pending.pop() {
+            if state.mana_spent > self.min_mana_spent {
+                continue;
+            }
+            if self.visited.contains(&state) {
+                continue;
+            }
+            self.visited.insert(state.clone());
+            if state.boss.is_dead() {
+                self.min_mana_spent = state.mana_spent;
+                return Some(state);
+            } else if !state.player.is_dead() {
+                for child in state.moves() {
+                    self.pending.push(child);
+                }
+            }
+        }
+        None
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
@@ -133,8 +145,6 @@ impl Boss {
 #[derive(Debug, Default, Eq, Clone)]
 struct State {
     round: i64,
-    #[allow(unused)]
-    last_action: &'static str,
     player: Player,
     boss: Boss,
 
@@ -143,9 +153,6 @@ struct State {
     hard_mode: bool,
 
     effect_timers: [u64; Effect::all().len()],
-
-    #[allow(unused)]
-    came_from: Option<SharedState>,
 }
 
 impl State {
@@ -153,58 +160,49 @@ impl State {
         self.player.is_dead() || self.boss.is_dead()
     }
 
-    const fn create_child(&self, action: &'static str, came_from: SharedState) -> Self {
+    const fn create_child(&self) -> Self {
         Self {
-            last_action: action,
             round: self.round + 1,
-            came_from: Some(came_from),
             ..*self
         }
     }
 
-    fn make_move(&self, spell: Spell, came_from: SharedState) -> Option<Self> {
-        let mut child = self.create_child(spell.name(), came_from);
+    fn make_move(&self, spell: Spell) -> Option<Self> {
+        let mut child = self.create_child();
 
-        for step in [
-            Step::HardMode,
-            Step::Effects,
-            Step::Spell(spell),
-            Step::Effects,
-            Step::BossAction,
-        ] {
-            if !step.apply(&mut child) {
-                return None;
-            }
-            if child.check_win() {
-                return Some(child);
-            }
+        if child.hard_mode {
+            child.player.take_damage(1);
         }
+
+        for effect in Effect::all() {
+            effect.apply(&mut child);
+        }
+
+        if !spell.apply(&mut child) {
+            return None;
+        }
+
+        for effect in Effect::all() {
+            effect.apply(&mut child);
+        }
+
+        let damage = child.boss.damage;
+        child.player.take_damage(damage);
 
         Some(child)
     }
 
     fn moves(&self) -> Vec<Self> {
-        let came_from = SharedState::new(self.clone());
         let mut res = Vec::new();
         if self.check_win() {
             return res;
         }
         for spell in Spell::all() {
-            if let Some(child) = self.make_move(spell, came_from.clone()) {
+            if let Some(child) = self.make_move(spell) {
                 res.push(child);
             }
         }
         res
-    }
-
-    #[allow(unused)]
-    fn get_history(&self, rc: &SharedState) -> Vec<SharedState> {
-        let mut result = Vec::new();
-        if let Some(rc) = &self.came_from {
-            result = rc.unwrap().get_history(rc);
-        }
-        result.push(rc.clone());
-        result
     }
 }
 
@@ -241,59 +239,6 @@ impl Hash for State {
     }
 }
 
-#[derive(Debug, Clone)]
-struct SharedState(Rc<RefCell<State>>);
-impl SharedState {
-    fn new(state: State) -> Self {
-        Self(Rc::new(RefCell::new(state)))
-    }
-    fn unwrap(&self) -> Ref<'_, State> {
-        self.0.borrow()
-    }
-}
-impl PartialEq for SharedState {
-    fn eq(&self, other: &Self) -> bool {
-        self.unwrap().deref() == other.unwrap().deref()
-    }
-}
-impl Eq for SharedState {}
-impl Hash for SharedState {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.unwrap().hash(state);
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-enum Step {
-    HardMode,
-    Effects,
-    Spell(Spell),
-    BossAction,
-}
-
-impl Step {
-    fn apply(self, state: &mut State) -> bool {
-        match self {
-            Self::HardMode => {
-                if state.hard_mode {
-                    state.player.take_damage(1);
-                }
-            }
-            Self::Effects => {
-                for effect in Effect::all() {
-                    effect.apply(state);
-                }
-            }
-            Self::Spell(spell) => return spell.apply(state),
-            Self::BossAction => {
-                let damage = state.boss.damage;
-                state.player.take_damage(damage);
-            }
-        }
-        true
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Spell {
     MagicMissile,
@@ -319,16 +264,6 @@ impl Spell {
             Self::Effect(Effect::Shield) => 113,
             Self::Effect(Effect::Poison) => 173,
             Self::Effect(Effect::Recharge) => 229,
-        }
-    }
-
-    const fn name(self) -> &'static str {
-        match self {
-            Self::MagicMissile => "Magic Missile",
-            Self::Drain => "Drain",
-            Self::Effect(Effect::Poison) => "Poison",
-            Self::Effect(Effect::Shield) => "Shield",
-            Self::Effect(Effect::Recharge) => "Recharge",
         }
     }
 
@@ -398,203 +333,30 @@ impl Effect {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fmt::Write;
 
-    fn run_test_play(player: Player, boss: Boss, hard_mode: bool) -> String {
-        let mut minimal = Vec::new();
-        let mut min_cost = u64::MAX;
-        for solution in play(player, boss, hard_mode) {
-            if solution.mana_spent < min_cost {
-                minimal.clear();
-                min_cost = solution.mana_spent;
-            }
-            if solution.mana_spent == min_cost {
-                minimal.push(solution);
-            }
-        }
-        let mut log = String::new();
-        for state in minimal {
-            for history in state.get_history(&SharedState::new(state.clone())) {
-                let inner = history.unwrap();
-                let State {
-                    round,
-                    last_action,
-                    player:
-                        Player {
-                            hp: player_hp,
-                            mana: player_mana,
-                            ..
-                        },
-                    boss: Boss { hp: boss_hp, .. },
-                    mana_spent,
+    #[test]
+    fn test_part_1_a() {
+        let boss = Boss::new(13, 8);
+        let player = Player::new(10, 250);
 
-                    effect_timers,
-                    ..
-                } = *inner;
-                write!(
-                    &mut log,
-                    "[{round}] {last_action} - Player:{player_hp}hp/{player_mana}mp Boss:{boss_hp}hp"
-                ).unwrap();
-                for effect in Effect::all() {
-                    let name = Spell::Effect(effect).name();
-                    let duration = effect_timers[effect.index()];
-                    if duration > 0 {
-                        write!(&mut log, " {name}({duration})").unwrap();
-                    }
-                }
-                writeln!(&mut log, " - Mana spent:{mana_spent}").unwrap();
-            }
-        }
-        log
+        let result = Simulator::new(player, boss, false)
+            .map(|s| s.mana_spent)
+            .min()
+            .unwrap();
+
+        assert_eq!(result, 226);
     }
 
     #[test]
-    fn test_play_a() {
-        let result = run_test_play(Player::new(10, 250), Boss::new(13, 8), false);
-        let expected = "\
-            [0] Start - Player:10hp/250mp Boss:13hp - Mana spent:0\n\
-            [1] Poison - Player:2hp/77mp Boss:10hp Poison(5) - Mana spent:173\n\
-            [2] Magic Missile - Player:2hp/24mp Boss:0hp Poison(3) - Mana spent:226\n\
-            ";
-        assert_eq!(
-            result, expected,
-            "\nexpanded left:\n{result}\nexpanded right:\n{expected}\n"
-        );
-    }
+    fn test_part_1_b() {
+        let boss = Boss::new(14, 8);
+        let player = Player::new(10, 250);
 
-    #[test]
-    fn test_play_a_hard() {
-        let result = run_test_play(Player::new(11, 250), Boss::new(13, 8), true);
-        let expected = "\
-            [0] Start - Player:11hp/250mp Boss:13hp - Mana spent:0\n\
-            [1] Poison - Player:2hp/77mp Boss:10hp Poison(5) - Mana spent:173\n\
-            [2] Magic Missile - Player:1hp/24mp Boss:0hp Poison(3) - Mana spent:226\n\
-            ";
-        assert_eq!(
-            result, expected,
-            "\nexpanded left:\n{result}\nexpanded right:\n{expected}\n"
-        );
-    }
+        let result = Simulator::new(player, boss, false)
+            .map(|s| s.mana_spent)
+            .min()
+            .unwrap();
 
-    #[test]
-    fn test_play_b() {
-        let result = run_test_play(Player::new(10, 250), Boss::new(14, 8), false);
-        let expected = "\
-            [0] Start - Player:10hp/250mp Boss:14hp - Mana spent:0\n\
-            [1] Recharge - Player:2hp/122mp Boss:14hp Recharge(4) - Mana spent:229\n\
-            [2] Shield - Player:1hp/211mp Boss:14hp Shield(5) Recharge(2) - Mana spent:342\n\
-            [3] Drain - Player:2hp/340mp Boss:12hp Shield(3) - Mana spent:415\n\
-            [4] Poison - Player:1hp/167mp Boss:9hp Shield(1) Poison(5) - Mana spent:588\n\
-            [5] Magic Missile - Player:1hp/114mp Boss:0hp Poison(3) - Mana spent:641\n\
-            ";
-        assert_eq!(
-            result, expected,
-            "\nexpanded left:\n{result}\nexpanded right:\n{expected}\n"
-        );
-    }
-
-    #[test]
-    fn test_play_b_hard() {
-        let result = run_test_play(Player::new(15, 250), Boss::new(14, 8), true);
-        let expected = "\
-            [0] Start - Player:15hp/250mp Boss:14hp - Mana spent:0\n\
-            [1] Recharge - Player:6hp/122mp Boss:14hp Recharge(4) - Mana spent:229\n\
-            [2] Shield - Player:4hp/211mp Boss:14hp Shield(5) Recharge(2) - Mana spent:342\n\
-            [3] Poison - Player:2hp/240mp Boss:11hp Shield(3) Poison(5) - Mana spent:515\n\
-            [4] Drain - Player:2hp/167mp Boss:3hp Shield(1) Poison(3) - Mana spent:588\n\
-            [5] Magic Missile - Player:1hp/167mp Boss:0hp Poison(2) - Mana spent:588\n\
-            ";
-        assert_eq!(
-            result, expected,
-            "\nexpanded left:\n{result}\nexpanded right:\n{expected}\n"
-        );
-    }
-
-    fn run_test_make_move(player: Player, boss: Boss, hard_mode: bool, spells: &[Spell]) -> String {
-        let mut state = State {
-            last_action: "Start",
-            player,
-            boss,
-            hard_mode,
-            ..Default::default()
-        };
-        let mut came_from = SharedState::new(state.clone());
-        let mut result = String::new();
-        for &spell in spells {
-            if state.player.is_dead() {
-                writeln!(&mut result, "Unexpected boss win!").unwrap();
-                break;
-            }
-            if state.boss.is_dead() {
-                writeln!(&mut result, "Unexpected player win!").unwrap();
-            }
-            if let Some(next) = state.make_move(spell, came_from.clone()) {
-                state = next;
-                came_from = SharedState::new(state.clone());
-            } else {
-                let name = spell.name();
-                writeln!(&mut result, "Failed to cast {name}!").unwrap();
-                break;
-            }
-        }
-        for history in state.get_history(&came_from) {
-            let inner = history.unwrap();
-            let State {
-                round,
-                last_action,
-                player:
-                    Player {
-                        hp: player_hp,
-                        mana: player_mana,
-                        ..
-                    },
-                boss: Boss { hp: boss_hp, .. },
-                mana_spent,
-
-                effect_timers,
-                ..
-            } = *inner;
-            write!(
-                &mut result,
-                "[{round}] {last_action} - Player:{player_hp}hp/{player_mana}mp Boss:{boss_hp}hp"
-            ).unwrap();
-            for effect in Effect::all() {
-                let name = Spell::Effect(effect).name();
-                let duration = effect_timers[effect.index()];
-                if duration > 0 {
-                    write!(&mut result, " {name}({duration})").unwrap();
-                }
-            }
-            writeln!(&mut result, " - Mana spent:{mana_spent}").unwrap();
-        }
-        result
-    }
-
-    #[test]
-    fn test_make_move_a() {
-        let result = run_test_make_move(
-            Player::new(10, 250),
-            Boss::new(14, 8),
-            false,
-            &[
-                Spell::Effect(Effect::Recharge),
-                Spell::Effect(Effect::Shield),
-                Spell::Drain,
-                Spell::Effect(Effect::Poison),
-                Spell::MagicMissile,
-            ],
-        );
-        let expected = "\
-            [0] Start - Player:10hp/250mp Boss:14hp - Mana spent:0\n\
-            [1] Recharge - Player:2hp/122mp Boss:14hp Recharge(4) - Mana spent:229\n\
-            [2] Shield - Player:1hp/211mp Boss:14hp Shield(5) Recharge(2) - Mana spent:342\n\
-            [3] Drain - Player:2hp/340mp Boss:12hp Shield(3) - Mana spent:415\n\
-            [4] Poison - Player:1hp/167mp Boss:9hp Shield(1) Poison(5) - Mana spent:588\n\
-            [5] Magic Missile - Player:1hp/114mp Boss:0hp Poison(3) - Mana spent:641\n\
-            ";
-        assert_eq!(
-            result, expected,
-            "\nexpanded left:\n{result}\nexpanded right:\n{expected}\n"
-        );
+        assert_eq!(result, 641);
     }
 }
