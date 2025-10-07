@@ -6,86 +6,106 @@ fn parse(input: &str) -> Result<Vec<u32>, ParseIntError> {
 }
 
 #[aoc(day24, part1)]
-fn part_1(input: &[u32]) -> u64 {
-    let sum: u32 = input.iter().copied().sum();
+fn part_1(packages: &[u32]) -> u64 {
+    let sum: u32 = packages.iter().copied().sum();
     let target = sum / 3;
-    let mut groups = vec![vec![]; target as usize + 1];
-    groups[0].push(0);
-    for (i, &x) in input.iter().enumerate() {
-        for y in (x..=target).rev() {
-            let mut g = std::mem::take(&mut groups[y as usize]);
-            for mask in &groups[(y - x) as usize] {
-                g.push(mask | (1u32 << i));
-            }
-            groups[y as usize] = g;
+
+    let mut target_combinations = find_combinations_by_weight(packages, target);
+    target_combinations.sort_unstable_by_key(|&m| m.count_ones());
+
+    let mut minimum = (u32::MAX, u64::MAX); // (size, QE)
+    for &combination1 in &target_combinations {
+        let size1 = combination1.count_ones();
+        if size1 > minimum.0 {
+            break;
         }
-    }
-    let mut min = (u32::MAX, u64::MAX);
-    groups[target as usize].sort_by_key(|&m| m.count_ones());
-    let target_group = groups[target as usize].as_slice();
-    for &mask1 in target_group {
-        let size1 = mask1.count_ones();
-        if size1 > min.0 {
-            continue;
-        }
-        for &mask2 in target_group {
-            if mask1 & mask2 != 0 {
+        for &combination2 in &target_combinations {
+            if combination1 & combination2 != 0 {
                 continue;
             }
-            let qe = input
+            // We have two non-overlapping combinations with 1/3 weight each. The third
+            // combination is the remaining packages, which must also have 1/3 weight.
+            //
+            // The QE is the product of the packages in `combination1`. Once we know
+            // there are at least one `combination2`, we do not need to look for more,
+            // and can skip to the next `combination1`.
+            let quantum_entanglement = packages
                 .iter()
                 .enumerate()
-                .filter_map(|(j, &y)| ((mask1 & (1 << j)) != 0).then_some(u64::from(y)))
+                .filter_map(|(j, &package)| {
+                    ((combination1 & (1 << j)) != 0).then_some(u64::from(package))
+                })
                 .product();
-            min = min.min((size1, qe));
+            minimum = minimum.min((size1, quantum_entanglement));
             break;
         }
     }
-    min.1
+    minimum.1
 }
 
 #[aoc(day24, part2)]
-fn part_2(input: &[u32]) -> u64 {
-    let sum: u32 = input.iter().copied().sum();
+fn part_2(packages: &[u32]) -> u64 {
+    let sum: u32 = packages.iter().copied().sum();
     let target = sum / 4;
-    let mut groups = vec![vec![]; target as usize + 1];
-    groups[0].push(0);
-    for (i, &x) in input.iter().enumerate() {
-        for y in (x..=target).rev() {
-            let mut g = std::mem::take(&mut groups[y as usize]);
-            for mask in &groups[(y - x) as usize] {
-                g.push(mask | (1u32 << i));
-            }
-            groups[y as usize] = g;
+
+    let mut target_combinations = find_combinations_by_weight(packages, target);
+    target_combinations.sort_unstable_by_key(|&m| m.count_ones());
+
+    let mut minimum = (u32::MAX, u64::MAX); // (size, QE)
+
+    'next_combination1: for &combination1 in &target_combinations {
+        let size = combination1.count_ones();
+        if size > minimum.0 {
+            break;
         }
-    }
-    let mut min = (u32::MAX, u64::MAX);
-    groups[target as usize].sort_by_key(|&m| m.count_ones());
-    let target_group = groups[target as usize].as_slice();
-    'mask1: for &mask1 in target_group {
-        let size = mask1.count_ones();
-        if size > min.0 {
-            continue;
-        }
-        for &mask2 in target_group {
-            if mask1 & mask2 != 0 {
+        for &combination2 in &target_combinations {
+            if combination1 & combination2 != 0 {
                 continue;
             }
-            for &mask3 in target_group {
-                if (mask1 | mask2) & mask3 != 0 {
+            for &combination3 in &target_combinations {
+                if (combination1 | combination2) & combination3 != 0 {
                     continue;
                 }
-                let qe = input
+                // We have three non-overlapping combinations with 1/4 weight each. The fourth
+                // combination is the remaining packages, which must also have 1/4 weight.
+                // The QE is the product of the packages in `combination1`. Once we know
+                // there are at least one `combination2` and `combination3`, we do not need
+                // to look for more, and can skip to the next `combination1`.
+                let quantum_entanglement = packages
                     .iter()
                     .enumerate()
-                    .filter_map(|(j, &y)| ((mask1 & (1 << j)) != 0).then_some(u64::from(y)))
+                    .filter_map(|(package_index, &package)| {
+                        ((combination1 & (1 << package_index)) != 0).then_some(u64::from(package))
+                    })
                     .product();
-                min = min.min((size, qe));
-                continue 'mask1;
+                minimum = minimum.min((size, quantum_entanglement));
+                continue 'next_combination1;
             }
         }
     }
-    min.1
+    minimum.1
+}
+
+fn find_combinations_by_weight(packages: &[u32], target: u32) -> Vec<u32> {
+    let mut combinations_by_weight = vec![vec![]; target as usize + 1];
+    combinations_by_weight[0].push(0);
+
+    // Try to add each package to previous combiantions. Since it is a new package, we
+    // know it is not already included.
+    for (package_index, &package) in packages.iter().enumerate() {
+        let package_bit = 1u32 << package_index;
+        for total in (package..=target).rev() {
+            // Temporarily take out the Vec, so we can modify it while iterating over the other combinations.
+            let mut combinations_total =
+                std::mem::take(&mut combinations_by_weight[total as usize]);
+            for &combination in &combinations_by_weight[(total - package) as usize] {
+                combinations_total.push(combination | package_bit);
+            }
+            combinations_by_weight[total as usize] = combinations_total;
+        }
+    }
+
+    combinations_by_weight.swap_remove(target as usize)
 }
 
 #[cfg(test)]
