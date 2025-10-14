@@ -112,16 +112,29 @@ fn find_combinations_by_weight(packages: &[u32], target: u32) -> Vec<u32> {
 mod tests {
     use super::*;
 
+    const EXAMPLE: &str = "\
+        1\n\
+        2\n\
+        3\n\
+        4\n\
+        5\n\
+        7\n\
+        8\n\
+        9\n\
+        10\n\
+        11\
+    ";
+
     #[test]
     fn test_part_1() {
-        let nums = vec![1, 2, 3, 4, 5, 7, 8, 9, 10, 11];
+        let nums = parse(EXAMPLE).unwrap();
         let result = part_1(&nums);
         assert_eq!(result, 99);
     }
 
     #[test]
     fn test_part_2() {
-        let nums = vec![1, 2, 3, 4, 5, 7, 8, 9, 10, 11];
+        let nums = parse(EXAMPLE).unwrap();
         let result = part_2(&nums);
         assert_eq!(result, 44);
     }

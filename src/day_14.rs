@@ -101,14 +101,13 @@ fn advanced_rules(input: &[Raindeer], time: i64) -> i64 {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
-    const EXAMPLE: &str = "
-Comet can fly 14 km/s for 10 seconds, but then must rest for 127 seconds.
-Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds.
-"
-    .trim_ascii();
+    const EXAMPLE: &str = "\
+        Comet can fly 14 km/s for 10 seconds, but then must rest for 127 seconds.\n\
+        Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds.\
+    ";
 
     #[test]
     fn test_parse() {
@@ -135,7 +134,7 @@ Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds.
     fn test_part_1() {
         let input = parse(EXAMPLE).unwrap();
         let result = simple_rules(&input, 1000);
-        assert_eq!(result, 1120);
+        assert_eq!(result, 1_120);
     }
 
     #[test]

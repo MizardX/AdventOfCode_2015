@@ -1,5 +1,5 @@
 #[aoc(day11, part1)]
-fn part1(input: &[u8]) -> String {
+fn part_1(input: &[u8]) -> String {
     let mut password = input.to_vec();
     prepare(&mut password);
     while !validate(&password) {
@@ -9,7 +9,7 @@ fn part1(input: &[u8]) -> String {
 }
 
 #[aoc(day11, part2)]
-fn part2(input: &[u8]) -> String {
+fn part_2(input: &[u8]) -> String {
     let mut password = input.to_vec();
     prepare(&mut password);
     while !validate(&password) {
@@ -75,7 +75,7 @@ fn increment(password: &mut [u8]) {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use test_case::test_case;
 
@@ -113,6 +113,6 @@ mod test {
     #[test_case("abcdefgh" => "abcdffaa")]
     #[test_case("ghijklmn" => "ghjaabcc")]
     fn test_part_1(input: &str) -> String {
-        part1(input.as_bytes())
+        part_1(input.as_bytes())
     }
 }

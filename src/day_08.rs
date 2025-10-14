@@ -7,7 +7,7 @@ enum State {
 }
 
 #[aoc(day8, part1)]
-fn part1(input: &[u8]) -> usize {
+fn part_1(input: &[u8]) -> usize {
     let mut len = 0;
     for line in input.split(|&ch| ch == b'\n') {
         let mut state = State::Normal;
@@ -28,7 +28,7 @@ fn part1(input: &[u8]) -> usize {
 }
 
 #[aoc(day8, part2)]
-fn part2(input: &[u8]) -> usize {
+fn part_2(input: &[u8]) -> usize {
     let mut len = 0;
     for line in input.split(|&ch| ch == b'\n') {
         for &ch in line {
@@ -52,7 +52,7 @@ mod tests {
     #[test_case(br#""abc\"abc""# => 3)]
     #[test_case(br#""\x27""# => 5)]
     fn test_part_1(input: &[u8]) -> usize {
-        part1(input)
+        part_1(input)
     }
 
     #[test_case(br#""""# => 4)]
@@ -60,6 +60,6 @@ mod tests {
     #[test_case(br#""abc\"abc""# => 6)]
     #[test_case(br#""\x27""# => 5)]
     fn test_part_2(input: &[u8]) -> usize {
-        part2(input)
+        part_2(input)
     }
 }

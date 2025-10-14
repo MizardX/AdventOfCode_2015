@@ -1,10 +1,10 @@
 #[aoc(day10, part1)]
-fn part1(input: &[u8]) -> usize {
+fn part_1(input: &[u8]) -> usize {
     run(input, 40, 1 << 19)
 }
 
 #[aoc(day10, part2)]
-fn part2(input: &[u8]) -> usize {
+fn part_2(input: &[u8]) -> usize {
     run(input, 50, 1 << 23)
 }
 
@@ -28,7 +28,7 @@ fn run(input: &[u8], turns: usize, capacity: usize) -> usize {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use test_case::test_case;
 

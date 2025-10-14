@@ -1,5 +1,5 @@
 #[aoc(day1, part1)]
-fn solve_part_1(input: &[u8]) -> i32 {
+fn part_1(input: &[u8]) -> i32 {
     input
         .iter()
         .map(|&ch| match ch {
@@ -11,7 +11,7 @@ fn solve_part_1(input: &[u8]) -> i32 {
 }
 
 #[aoc(day1, part2)]
-fn solve_part_2(input: &[u8]) -> usize {
+fn part_2(input: &[u8]) -> usize {
     input
         .iter()
         .scan(1, |s, &ch| {
@@ -27,7 +27,7 @@ fn solve_part_2(input: &[u8]) -> usize {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use test_case::test_case;
 
@@ -41,12 +41,12 @@ mod test {
     #[test_case(b")))" => -3; "example 5a")]
     #[test_case(b")())())" => -3; "example 5b")]
     fn test_part_1(input: &[u8]) -> i32 {
-        solve_part_1(input)
+        part_1(input)
     }
 
     #[test_case(b")" => 1; "example 6")]
     #[test_case(b"()())" => 5; "example 7")]
     fn test_part_2(input: &[u8]) -> usize {
-        solve_part_2(input)
+        part_2(input)
     }
 }

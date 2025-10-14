@@ -178,12 +178,11 @@ fn part_2(boss: &CharInfo) -> u64 {
 mod tests {
     use super::*;
 
-    const EXAMPLE: &str = "
-Hit Points: 12
-Damage: 7
-Armor: 2
-"
-    .trim_ascii();
+    const EXAMPLE: &str = "\
+        Hit Points: 12\n\
+        Damage: 7\n\
+        Armor: 2\
+    ";
 
     #[test]
     fn test_parse() {

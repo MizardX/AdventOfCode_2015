@@ -170,13 +170,12 @@ fn part_2(ops: &[Op]) -> u64 {
 mod tests {
     use super::*;
 
-    const EXAMPLE: &str = "
-inc a
-jio a, +2
-tpl a
-inc a
-"
-    .trim_ascii();
+    const EXAMPLE: &str = "\
+        inc a\n\
+        jio a, +2\n\
+        tpl a\n\
+        inc a\
+    ";
 
     #[test]
     fn test_parse() {

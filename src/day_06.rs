@@ -82,7 +82,7 @@ impl TryFrom<&[u8]> for Instruction {
 }
 
 #[aoc_generator(day6)]
-fn parse_input(input: &[u8]) -> Result<Vec<Instruction>, ParseError> {
+fn parse(input: &[u8]) -> Result<Vec<Instruction>, ParseError> {
     input
         .split(|&ch| ch == b'\n')
         .map(std::convert::TryInto::try_into)
@@ -90,7 +90,7 @@ fn parse_input(input: &[u8]) -> Result<Vec<Instruction>, ParseError> {
 }
 
 #[aoc(day6, part1)]
-fn solve_part_1(instructions: &[Instruction]) -> usize {
+fn part_1(instructions: &[Instruction]) -> usize {
     let mut grid = vec![[false; 1000]; 1000].into_boxed_slice();
     for instr in instructions {
         match instr {
@@ -121,7 +121,7 @@ fn solve_part_1(instructions: &[Instruction]) -> usize {
 }
 
 #[aoc(day6, part2)]
-fn solve_part_2(instructions: &[Instruction]) -> usize {
+fn part_2(instructions: &[Instruction]) -> usize {
     let mut grid = vec![[0_u8; 1000]; 1000].into_boxed_slice();
     for instr in instructions {
         match instr {
@@ -152,7 +152,7 @@ fn solve_part_2(instructions: &[Instruction]) -> usize {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use test_case::test_case;
 
@@ -160,19 +160,19 @@ mod test {
     #[test_case(b"toggle 0,0 through 999,0" => Ok(vec![Instruction::Toggle(Rect::new(0, 0, 999, 0))]))]
     #[test_case(b"turn off 499,499 through 500,500" => Ok(vec![Instruction::TurnOff(Rect::new(499, 499, 500, 500))]))]
     fn test_parse(input: &[u8]) -> Result<Vec<Instruction>, ParseError> {
-        parse_input(input)
+        parse(input)
     }
 
     #[test_case(&[Instruction::TurnOn(Rect::new(0,0,999,999))] => 1_000_000)]
     #[test_case(&[Instruction::Toggle(Rect::new(0,0,999,0))] => 1_000)]
     #[test_case(&[Instruction::TurnOn(Rect::new(0,0,999,999)), Instruction::TurnOff(Rect::new(499,499,500,500))] => 999_996)]
     fn test_part_1(instructions: &[Instruction]) -> usize {
-        solve_part_1(instructions)
+        part_1(instructions)
     }
 
     #[test_case(&[Instruction::TurnOn(Rect::new(0,0,0,0))] => 1)]
     #[test_case(&[Instruction::Toggle(Rect::new(0,0,999,999))] => 2_000_000)]
     fn test_part_2(instructions: &[Instruction]) -> usize {
-        solve_part_2(instructions)
+        part_2(instructions)
     }
 }

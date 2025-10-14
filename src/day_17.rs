@@ -24,7 +24,7 @@ fn run_part_1(volume: u32, containers: &[u32]) -> usize {
 }
 
 #[aoc(day17, part2)]
-fn part2(containers: &[u32]) -> usize {
+fn part_2(containers: &[u32]) -> usize {
     run_part_2(150, containers)
 }
 
@@ -50,17 +50,16 @@ fn run_part_2(volume: u32, containers: &[u32]) -> usize {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
-    const EXAMPLE: &str = "
-20
-15
-10
-5
-5
-"
-    .trim_ascii();
+    const EXAMPLE: &str = "\
+        20\n\
+        15\n\
+        10\n\
+        5\n\
+        5\
+    ";
 
     #[test]
     fn test_parse() {
@@ -70,20 +69,20 @@ mod test {
 
     #[test]
     fn test_part_1() {
-        let containers = &[20, 15, 10, 5, 5];
+        let containers = parse(EXAMPLE).unwrap();
         let volume = 25;
 
-        let result = run_part_1(volume, containers);
+        let result = run_part_1(volume, &containers);
 
         assert_eq!(result, 4);
     }
 
     #[test]
     fn test_part_2() {
-        let containers = &[20, 15, 10, 5, 5];
+        let containers = parse(EXAMPLE).unwrap();
         let volume = 25;
 
-        let result = run_part_2(volume, containers);
+        let result = run_part_2(volume, &containers);
 
         assert_eq!(result, 3);
     }

@@ -28,7 +28,7 @@ enum ParseError {
 }
 
 #[aoc_generator(day2)]
-fn parse_input(input: &[u8]) -> Result<Vec<Present>, ParseError> {
+fn parse(input: &[u8]) -> Result<Vec<Present>, ParseError> {
     input
         .split(|&b| b == b'\n')
         .filter(|line| !line.is_empty())
@@ -47,7 +47,7 @@ fn parse_input(input: &[u8]) -> Result<Vec<Present>, ParseError> {
 }
 
 #[aoc(day2, part1)]
-fn solve_part_1(input: &[Present]) -> u32 {
+fn part_1(input: &[Present]) -> u32 {
     input
         .iter()
         .map(|b| {
@@ -60,7 +60,7 @@ fn solve_part_1(input: &[Present]) -> u32 {
 }
 
 #[aoc(day2, part2)]
-fn solve_part_2(input: &[Present]) -> u32 {
+fn part_2(input: &[Present]) -> u32 {
     input
         .iter()
         .map(|b| {
@@ -71,29 +71,31 @@ fn solve_part_2(input: &[Present]) -> u32 {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use test_case::test_case;
 
-    #[test]
-    fn test_parse() {
-        let input = b"2x3x4\n1x1x10";
-        let result = parse_input(input);
-        assert_eq!(
-            result,
-            Ok(vec![Present::new(2, 3, 4), Present::new(1, 1, 10)])
-        );
+    const EXAMPLE1: &[u8] = b"2x3x4";
+    const EXAMPLE2: &[u8] = b"1x1x10";
+
+    #[test_case(EXAMPLE1 => &[Present::new(2, 3, 4)][..])]
+    #[test_case(EXAMPLE2 => &[Present::new(1, 1, 10)][..])]
+    fn test_parse(input: &[u8]) -> Vec<Present> {
+        parse(input).unwrap()
     }
 
-    #[test_case(Present::new(2, 3, 4) => 58)]
-    #[test_case(Present::new(1, 1, 10) => 43)]
-    fn test_part_1(present: Present) -> u32 {
-        solve_part_1(&[present])
+    #[test_case(EXAMPLE1 => 58)]
+    #[test_case(EXAMPLE2 => 43)]
+    fn test_part_1(input: &[u8]) -> u32 {
+        let presents = parse(input).unwrap();
+        part_1(&presents)
     }
 
-    #[test_case(Present::new(2, 3, 4) => 34)]
-    #[test_case(Present::new(1, 1, 10) => 14)]
-    fn test_part_2(present: Present) -> u32 {
-        solve_part_2(&[present])
+
+    #[test_case(EXAMPLE1 => 34)]
+    #[test_case(EXAMPLE2 => 14)]
+    fn test_part_2(input: &[u8]) -> u32 {
+        let presents = parse(input).unwrap();
+        part_2(&presents)
     }
 }

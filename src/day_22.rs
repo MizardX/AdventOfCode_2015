@@ -333,30 +333,17 @@ impl Effect {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_case::test_case;
 
-    #[test]
-    fn test_part_1_a() {
-        let boss = Boss::new(13, 8);
+    #[test_case(13 => 226)]
+    #[test_case(14 => 641)]
+    fn test_part_1(boss_hp: u64) -> u64 {
+        let boss = Boss::new(boss_hp, 8);
         let player = Player::new(10, 250);
 
-        let result = Simulator::new(player, boss, false)
+        Simulator::new(player, boss, false)
             .map(|s| s.mana_spent)
             .min()
-            .unwrap();
-
-        assert_eq!(result, 226);
-    }
-
-    #[test]
-    fn test_part_1_b() {
-        let boss = Boss::new(14, 8);
-        let player = Player::new(10, 250);
-
-        let result = Simulator::new(player, boss, false)
-            .map(|s| s.mana_spent)
-            .min()
-            .unwrap();
-
-        assert_eq!(result, 641);
+            .unwrap()
     }
 }

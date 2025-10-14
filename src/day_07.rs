@@ -161,7 +161,7 @@ fn parse(input: &str) -> Result<Circuit, ParseError> {
 }
 
 #[aoc(day7, part1)]
-fn part1(circuit: &Circuit) -> Option<u16> {
+fn part_1(circuit: &Circuit) -> Option<u16> {
     let mut values = vec![None; circuit.gates.len()];
     run(circuit, &mut values)
 }
@@ -171,7 +171,7 @@ fn run(circuit: &Circuit, values: &mut [Option<u16>]) -> Option<u16> {
 }
 
 #[aoc(day7, part2)]
-fn part2(circuit: &Circuit) -> Option<u16> {
+fn part_2(circuit: &Circuit) -> Option<u16> {
     let mut values = vec![None; circuit.gates.len()];
     let a_value = run(circuit, &mut values);
     values.fill(None);
@@ -183,10 +183,20 @@ fn part2(circuit: &Circuit) -> Option<u16> {
 mod tests {
     use super::*;
 
+    const EXAMPLE: &str = "\
+        123 -> x\n\
+        456 -> y\n\
+        x AND y -> d\n\
+        x OR y -> e\n\
+        x LSHIFT 2 -> f\n\
+        y RSHIFT 2 -> g\n\
+        NOT x -> h\n\
+        NOT y -> i\
+    ";
+
     #[test]
     fn test_parse() {
-        let input = "123 -> x\n456 -> y\nx AND y -> d\nx OR y -> e\nx LSHIFT 2 -> f\ny RSHIFT 2 -> g\nNOT x -> h\nNOT y -> i";
-        let result = parse(input).unwrap();
+        let result = parse(EXAMPLE).unwrap();
         assert_eq!(
             result,
             Circuit::new(
@@ -208,8 +218,7 @@ mod tests {
 
     #[test]
     fn test_part_1() {
-        let input = "123 -> x\n456 -> y\nx AND y -> d\nx OR y -> e\nx LSHIFT 2 -> f\ny RSHIFT 2 -> g\nNOT x -> h\nNOT y -> i";
-        let circuit = parse(input).unwrap();
+        let circuit = parse(EXAMPLE).unwrap();
         let mut values = vec![None; circuit.gates.len()];
         run(&circuit, &mut values);
         assert_eq!(

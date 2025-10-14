@@ -34,7 +34,7 @@ fn parse(input: &str) -> Result<Grid<u64>, ParseError> {
 }
 
 #[aoc(day9, part1)]
-fn part1(input: &Grid<u64>) -> u64 {
+fn part_1(input: &Grid<u64>) -> u64 {
     fn walk(grid: &Grid<u64>, perm: &mut [usize], index: usize) -> u64 {
         if index == perm.len() {
             let mut dist = 0;
@@ -59,7 +59,7 @@ fn part1(input: &Grid<u64>) -> u64 {
 }
 
 #[aoc(day9, part2)]
-fn part2(input: &Grid<u64>) -> u64 {
+fn part_2(input: &Grid<u64>) -> u64 {
     fn walk(grid: &Grid<u64>, perm: &mut [usize], index: usize) -> u64 {
         if index == perm.len() {
             let mut dist = 0;
@@ -87,10 +87,15 @@ fn part2(input: &Grid<u64>) -> u64 {
 mod tests {
     use super::*;
 
+    const EXAMPLE: &str = "\
+        London to Dublin = 464\n\
+        London to Belfast = 518\n\
+        Dublin to Belfast = 141\
+    ";
+
     #[test]
     fn test_parse() {
-        let input = "London to Dublin = 464\nLondon to Belfast = 518\nDublin to Belfast = 141";
-        let result = parse(input).unwrap();
+        let result = parse(EXAMPLE).unwrap();
         assert_eq!(result.rows(), 3);
         assert_eq!(result.cols(), 3);
         assert_eq!(result[(0, 1)], 464);
@@ -103,17 +108,15 @@ mod tests {
 
     #[test]
     fn test_part_1() {
-        let input = "London to Dublin = 464\nLondon to Belfast = 518\nDublin to Belfast = 141";
-        let grid = parse(input).unwrap();
-        let result = part1(&grid);
+        let grid = parse(EXAMPLE).unwrap();
+        let result = part_1(&grid);
         assert_eq!(result, 605);
     }
 
     #[test]
     fn test_part_2() {
-        let input = "London to Dublin = 464\nLondon to Belfast = 518\nDublin to Belfast = 141";
-        let grid = parse(input).unwrap();
-        let result = part2(&grid);
+        let grid = parse(EXAMPLE).unwrap();
+        let result = part_2(&grid);
         assert_eq!(result, 982);
     }
 }

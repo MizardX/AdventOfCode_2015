@@ -146,14 +146,13 @@ fn run(input: &[Recipe], restrict_calories: bool) -> i32 {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
-    const EXAMPLE: &str = "
-Butterscotch: capacity -1, durability -2, flavor 6, texture 3, calories 8
-Cinnamon: capacity 2, durability 3, flavor -2, texture -1, calories 3
-"
-    .trim_ascii();
+    const EXAMPLE: &str = "\
+        Butterscotch: capacity -1, durability -2, flavor 6, texture 3, calories 8\n\
+        Cinnamon: capacity 2, durability 3, flavor -2, texture -1, calories 3\
+    ";
 
     #[test]
     fn test_parse() {

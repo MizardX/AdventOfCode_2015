@@ -145,21 +145,31 @@ fn part_2(input: &Schema) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_case::test_case;
 
-    const EXAMPLE: &[u8] = br"
-e => H
-e => O
-H => HO
-H => OH
-O => HH
+    const EXAMPLE1: &[u8] = b"\
+        e => H\n\
+        e => O\n\
+        H => HO\n\
+        H => OH\n\
+        O => HH\n\
+        \n\
+        HOH\
+    ";
 
-HOH
-"
-    .trim_ascii();
+    const EXAMPLE2: &[u8] = b"\
+        e => H\n\
+        e => O\n\
+        H => HO\n\
+        H => OH\n\
+        O => HH\n\
+        \n\
+        HOHOHO\
+    ";
 
     #[test]
     fn test_parse() {
-        let result = parse(EXAMPLE).unwrap();
+        let result = parse(EXAMPLE1).unwrap();
 
         macro_rules! rule {
             ($src:expr => $($target:expr),* $(,)?) => {
@@ -183,35 +193,16 @@ HOH
         );
     }
 
-    #[test]
-    fn test_part_1() {
-        let schema = parse(EXAMPLE).unwrap();
-
-        let result = part_1(&schema);
-
-        assert_eq!(result, 4);
+    #[test_case(EXAMPLE1 => 4)]
+    fn test_part_1(input: &[u8]) -> usize {
+        let schema = parse(input).unwrap();
+        part_1(&schema)
     }
 
-    #[test]
-    fn test_part_2_a() {
-        let schema = parse(EXAMPLE).unwrap();
-
-        let result = part_2(&schema);
-
-        assert_eq!(result, 3);
-    }
-
-    #[test]
-    fn test_part_2_b() {
-        let mut schema = parse(EXAMPLE).unwrap();
-        schema.target.extend_from_slice(&[
-            Atom::Single(b'O'),
-            Atom::Single(b'H'),
-            Atom::Single(b'O'),
-        ]);
-
-        let result = part_2(&schema);
-
-        assert_eq!(result, 6);
+    #[test_case(EXAMPLE1 => 3)]
+    #[test_case(EXAMPLE2 => 6)]
+    fn test_part_2(input: &[u8]) -> usize {
+        let schema = parse(input).unwrap();
+        part_2(&schema)
     }
 }

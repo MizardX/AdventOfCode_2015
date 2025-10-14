@@ -1,5 +1,5 @@
 #[aoc(day4, part1)]
-fn solve_part_1(input: &[u8]) -> u32 {
+fn part_1(input: &[u8]) -> u32 {
     let mut root = md5::Context::new();
     root.consume(input.trim_ascii());
     for x in 1_u32.. {
@@ -14,7 +14,7 @@ fn solve_part_1(input: &[u8]) -> u32 {
 }
 
 #[aoc(day4, part2)]
-fn solve_part_2(input: &[u8]) -> u32 {
+fn part_2(input: &[u8]) -> u32 {
     let mut root = md5::Context::new();
     root.consume(input.trim_ascii());
     for x in 1_u32.. {
@@ -29,19 +29,19 @@ fn solve_part_2(input: &[u8]) -> u32 {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use test_case::test_case;
 
     #[test_case(b"abcdef" => 609_043)]
     #[test_case(b"pqrstuv" => 1_048_970)]
     fn test_part_1(input: &[u8]) -> u32 {
-        solve_part_1(input)
+        part_1(input)
     }
 
     #[test_case(b"abcdef" => 6_742_839)]
     #[test_case(b"pqrstuv" => 5_714_438)]
     fn test_part_2(input: &[u8]) -> u32 {
-        solve_part_2(input)
+        part_2(input)
     }
 }

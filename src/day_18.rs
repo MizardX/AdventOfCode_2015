@@ -29,12 +29,12 @@ fn parse(input: &[u8]) -> Result<Grid<bool>, ParseError> {
 }
 
 #[aoc(day18, part1)]
-fn part1(grid: &Grid<bool>) -> usize {
+fn part_1(grid: &Grid<bool>) -> usize {
     run(grid, 100, false)
 }
 
 #[aoc(day18, part2)]
-fn part2(grid: &Grid<bool>) -> usize {
+fn part_2(grid: &Grid<bool>) -> usize {
     run(grid, 100, true)
 }
 
@@ -80,19 +80,18 @@ fn run(grid: &Grid<bool>, steps: usize, fixed_corners: bool) -> usize {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use test_case::test_case;
 
-    const EXAMPLE: &[u8] = b"
-.#.#.#
-...##.
-#....#
-..#...
-#.#..#
-####..
-"
-    .trim_ascii();
+    const EXAMPLE: &[u8] = b"\
+        .#.#.#\n\
+        ...##.\n\
+        #....#\n\
+        ..#...\n\
+        #.#..#\n\
+        ####..\
+    ";
 
     #[test]
     fn test_parse() {

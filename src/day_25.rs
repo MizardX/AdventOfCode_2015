@@ -60,10 +60,9 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
-    const EXAMPLE: &str = "
-To continue, please consult the code grid in the manual.  Enter the code at row 3, column 4.
-"
-    .trim_ascii();
+    const EXAMPLE: &str = "\
+        To continue, please consult the code grid in the manual.  Enter the code at row 3, column 4.\
+    ";
 
     #[test]
     fn test_parse() {

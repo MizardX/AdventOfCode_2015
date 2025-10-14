@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 #[aoc(day3, part1)]
-fn solve_part_1(input: &[u8]) -> usize {
+fn part_1(input: &[u8]) -> usize {
     let mut seen = HashSet::with_capacity(input.len());
     let mut x = 0;
     let mut y = 0;
@@ -20,7 +20,7 @@ fn solve_part_1(input: &[u8]) -> usize {
 }
 
 #[aoc(day3, part2)]
-fn solve_part_2(input: &[u8]) -> usize {
+fn part_2(input: &[u8]) -> usize {
     let mut seen = HashSet::with_capacity(input.len());
     let mut x1 = 0;
     let mut y1 = 0;
@@ -42,7 +42,7 @@ fn solve_part_2(input: &[u8]) -> usize {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use test_case::test_case;
 
@@ -50,13 +50,13 @@ mod test {
     #[test_case(b"^>v<" => 4)]
     #[test_case(b"^v^v^v^v^v" => 2)]
     fn test_part_1(input: &[u8]) -> usize {
-        solve_part_1(input)
+        part_1(input)
     }
 
     #[test_case(b"^v" => 3; "up down")]
     #[test_case(b"^>v<" => 3)]
     #[test_case(b"^v^v^v^v^v" => 11)]
     fn test_part_2(input: &[u8]) -> usize {
-        solve_part_2(input)
+        part_2(input)
     }
 }

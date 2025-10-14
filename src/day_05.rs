@@ -1,5 +1,5 @@
 #[aoc(day5, part1)]
-fn solve_part_1(input: &[u8]) -> usize {
+fn part_1(input: &[u8]) -> usize {
     input
         .split(|&ch| ch == b'\n')
         .filter(|&line| {
@@ -24,7 +24,7 @@ fn solve_part_1(input: &[u8]) -> usize {
 }
 
 #[aoc(day5, part2)]
-fn solve_part_2(input: &[u8]) -> usize {
+fn part_2(input: &[u8]) -> usize {
     input
         .split(|&ch| ch == b'\n')
         .filter(|&line| {
@@ -51,7 +51,7 @@ fn solve_part_2(input: &[u8]) -> usize {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use test_case::test_case;
 
@@ -61,7 +61,7 @@ mod test {
     #[test_case(b"haegwjzuvuyypxyu" => 0)]
     #[test_case(b"dvszwmarrgswjxmb" => 0)]
     fn test_part_1(input: &[u8]) -> usize {
-        solve_part_1(input)
+        part_1(input)
     }
 
     #[test_case(b"qjhvhtzxzqqjkmpb" => 1)]
@@ -69,6 +69,6 @@ mod test {
     #[test_case(b"uurcxstgmygtbstg" => 0)]
     #[test_case(b"ieodomkazucvgmuy" => 0)]
     fn test_part_2(input: &[u8]) -> usize {
-        solve_part_2(input)
+        part_2(input)
     }
 }
